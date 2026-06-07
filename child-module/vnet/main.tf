@@ -1,14 +1,57 @@
-resource "azurerm_virtual_network" "vnet" {
-  for_each = var.vnet_var
+variable "resource_group_name" {
+  type = string
+}
 
-  name                = each.value.name
-  location            = each.value.location
-  resource_group_name = each.value.resource_group_name
+variable "location" {
+  type = string
+}
 
-  address_space = each.value.address_space
-  dns_servers   = each.value.dns_servers
+variable "vnet_name" {
+  type = string
+}
 
-  flow_timeout_in_minutes = each.value.flow_timeout_in_minutes
+variable "address_space" {
+  type = list(string)
+}
 
-  tags = each.value.tags
+variable "dns_servers" {
+  type    = list(string)
+  default = null
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
+
+variable "ddos_protection_plan_id" {
+  type    = string
+  default = null
+}
+
+variable "subnets" {
+
+  type = map(object({
+
+    address_prefixes = list(string)
+
+    service_endpoints = optional(list(string))
+
+    private_endpoint_network_policies = optional(string)
+
+    private_link_service_network_policies_enabled = optional(bool)
+
+    nsg_id = optional(string)
+
+    delegation = optional(object({
+      name = string
+
+      service_delegation = object({
+        name    = string
+        actions = list(string)
+      })
+    }))
+  }))
+
+  default = {}
 }
