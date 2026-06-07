@@ -1,57 +1,59 @@
-variable "resource_group_name" {
-  type = string
+resource "azurerm_virtual_network" "vnet" {
+
+  name                = var.vnet_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  address_space = var.address_space
+  dns_servers   = var.dns_servers
+
+  dynamic "ddos_protection_plan" {
+
+    for_each = var.ddos_protection_plan_id != null ? [1] : []
+
+    content {
+      id     = var.ddos_protection_plan_id
+      enable = true
+    }
+  }
+
+  tags = var.tags
 }
 
-variable "location" {
-  type = string
-}
+resource "azurerm_subnet" "subnet" {
 
-variable "vnet_name" {
-  type = string
-}
+  for_each = var.subnets
 
-variable "address_space" {
-  type = list(string)
-}
+  name                 = each.key
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.this.name
 
-variable "dns_servers" {
-  type    = list(string)
-  default = null
-}
+  address_prefixes = each.value.address_prefixes
 
-variable "tags" {
-  type    = map(string)
-  default = {}
-}
+  service_endpoints = try(
+    each.value.service_endpoints,
+    null
+  )
 
-variable "ddos_protection_plan_id" {
-  type    = string
-  default = null
-}
+  private_endpoint_network_policies = try(
+    each.value.private_endpoint_network_policies,
+    null
+  )
 
-variable "subnets" {
+  dynamic "delegation" {
 
-  type = map(object({
+    for_each = try(each.value.delegation, null) != null ? [each.value.delegation] : []
 
-    address_prefixes = list(string)
+    content {
 
-    service_endpoints = optional(list(string))
+      name = delegation.value.name
 
-    private_endpoint_network_policies = optional(string)
+      service_delegation {
 
-    private_link_service_network_policies_enabled = optional(bool)
+        name = delegation.value.service_delegation.name
 
-    nsg_id = optional(string)
-
-    delegation = optional(object({
-      name = string
-
-      service_delegation = object({
-        name    = string
-        actions = list(string)
-      })
-    }))
-  }))
-
-  default = {}
+        actions = delegation.value.service_delegation.actions
+      }
+    }
+  }
 }
