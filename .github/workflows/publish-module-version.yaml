@@ -1,0 +1,91 @@
+name: Version and Publish Terraform Module
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Latest Tag
+        id: tag
+        run: |
+          git fetch --tags
+
+          LATEST_TAG=$(git tag --sort=-version:refname | head -n 1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            NEW_TAG="v1.0.0"
+          else
+            VERSION=${LATEST_TAG#v}
+
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            MINOR=$(echo $VERSION | cut -d. -f2)
+            PATCH=$(echo $VERSION | cut -d. -f3)
+
+            PATCH=$((PATCH + 1))
+
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          fi
+
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag ${{ steps.tag.outputs.new_tag }}
+          git push origin ${{ steps.tag.outputs.new_tag }}
+
+      - name: Create ZIP Package
+        run: |
+          VERSION=${{ steps.tag.outputs.new_tag }}
+
+          mkdir package
+
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            ./ package/
+
+          cd package
+
+          zip -r ../terraform-module-${VERSION}.zip .
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Install Azure DevOps Extension
+        run: |
+          az extension add --name azure-devops
+
+      - name: Publish to Azure Artifacts
+        env:
+          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+        run: |
+          VERSION=${{ steps.tag.outputs.new_tag }}
+          VERSION=${VERSION#v}
+
+          mkdir artifact
+          mv terraform-module-v${VERSION}.zip artifact/
+
+          az artifacts universal publish \
+            --organization https://dev.azure.com/${{ secrets.AZDO_ORG }} \
+            --project ${{ secrets.AZDO_PROJECT }} \
+            --feed ${{ secrets.AZDO_FEED }} \
+            --name terraform-module \
+            --version $VERSION \
+            --path artifact
