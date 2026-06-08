@@ -83,9 +83,9 @@ jobs:
           mv terraform-module-v${VERSION}.zip artifact/
 
           az artifacts universal publish \
-            --organization https://dev.azure.com/${{ secrets.AZDO_ORG }} \
-            --project ${{ secrets.AZDO_PROJECT }} \
-            --feed ${{ secrets.AZDO_FEED }} \
+            --organization https://dev.azure.com/${{ secrets.AZURE_DEVOPS_ORG }} \
+            --project ${{ secrets.AZURE_DEVOPS_PROJECT }} \
+            --feed ${{ secrets.AZURE_DEVOPS_FEED }} \
             --name terraform-module \
             --version $VERSION \
             --path artifact
