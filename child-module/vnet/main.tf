@@ -1,3 +1,4 @@
+# Vnet
 resource "azurerm_virtual_network" "vnet" {
 
   name                = var.vnet_name
