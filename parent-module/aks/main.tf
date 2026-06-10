@@ -1,4 +1,4 @@
-# AKS Module
+# AKS Module terraform
 module "aks" {
     source = "../../child-module/aks"
     resource_group_name = var.resource_group_name
