@@ -1,4 +1,4 @@
-#Vnet module
+#Vnet module terraform
 module "vnet" {
 
   source = "../../child-module/vnet"
