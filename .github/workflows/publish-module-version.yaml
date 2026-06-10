@@ -1,3 +1,4 @@
+#
 name: Version and Publish Terraform Module
 
 on:
