@@ -85,6 +85,7 @@ jobs:
 
           az artifacts universal publish \
             --organization https://dev.azure.com/${{ secrets.AZURE_DEVOPS_ORG }} \
+            --scope project \
             --project ${{ secrets.AZURE_DEVOPS_PROJECT }} \
             --feed ${{ secrets.AZURE_DEVOPS_FEED }} \
             --name terraform-module \
